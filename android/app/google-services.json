@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "534276148824",
+    "project_id": "online-lawyer-system",
+    "storage_bucket": "online-lawyer-system.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:534276148824:android:052abe1b706387cbcd442d",
+        "android_client_info": {
+          "package_name": "com.example.online_lawyer_appointment_system"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAb609uolKW3Sp36GlX63o7hx-G798_LDs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
