@@ -11,6 +11,7 @@ import 'package:online_lawyer_appointment_system/main.dart';
 import 'package:online_lawyer_appointment_system/registration/register.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:online_lawyer_appointment_system/users/userHomepage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginClass extends StatefulWidget {
   const LoginClass({Key? key}) : super(key: key);
@@ -38,12 +39,12 @@ class _LoginClassState extends State<LoginClass> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        backgroundColor: Color(0xFF009999),
-        iconTheme: IconThemeData(color: Colors.white),
+        backgroundColor: const Color(0xFF009999),
+        iconTheme: const IconThemeData(color: Colors.white),
         titleSpacing: 0,
         centerTitle: true,
-        title: Padding(
-          padding: const EdgeInsets.only(left: 8),
+        title: const Padding(
+          padding: EdgeInsets.only(left: 8),
           child: Text('Login', style: TextStyle(color: Colors.white)),
         ),
         elevation: 0,
@@ -51,13 +52,13 @@ class _LoginClassState extends State<LoginClass> {
       body: Form(
         key: loginUserKey,
         child: Padding(
-          padding: EdgeInsets.only(left: 8.0, right: 8.9, bottom: 8.0),
+          padding: const EdgeInsets.only(left: 8.0, right: 8.9, bottom: 8.0),
           child: ListView(
             children: [
               // Image(image: AssetImage('assets/heavy.jpg')),
-              Image(image: AssetImage('images/law.png')),
-              Padding(
-                padding: const EdgeInsets.only(top: 19, left: 18, right: 18),
+              const Image(image: AssetImage('images/law.png')),
+              const Padding(
+                padding: EdgeInsets.only(top: 19, left: 18, right: 18),
                 child: Text(
                   'Name.',
                   style: TextStyle(
@@ -70,22 +71,22 @@ class _LoginClassState extends State<LoginClass> {
               Padding(
                 padding: const EdgeInsets.only(left: 18, right: 18),
                 child: TextFormField(
-                  style: TextStyle(color: Colors.white),
+                  style: const TextStyle(color: Colors.white),
                   controller: emailtextEditingController,
                   keyboardType: TextInputType.emailAddress,
                   decoration: InputDecoration(
-                    fillColor: Color(0xFF009999),
+                    fillColor: const Color(0xFF009999),
 
                     filled: true,
-                    prefixIcon: Icon(
+                    prefixIcon: const Icon(
                       Icons.email,
                       size: 16,
                       color: Color.fromARGB(255, 177, 237, 237),
                     ),
 
                     suffixIcon: IconButton(
-                      color: Color.fromARGB(255, 177, 237, 237),
-                      icon: Icon(
+                      color: const Color.fromARGB(255, 177, 237, 237),
+                      icon: const Icon(
                         Icons.close,
                         size: 16,
                       ),
@@ -103,7 +104,7 @@ class _LoginClassState extends State<LoginClass> {
                     //   color: Color.fromARGB(255, 177, 237, 237),
                     // ),
                     border: InputBorder.none,
-                    hintStyle: TextStyle(
+                    hintStyle: const TextStyle(
                       fontSize: 11,
                       letterSpacing: 1,
                       color: Colors.white,
@@ -124,8 +125,8 @@ class _LoginClassState extends State<LoginClass> {
                 ),
               ),
 
-              Padding(
-                padding: const EdgeInsets.only(top: 19, left: 18, right: 18),
+              const Padding(
+                padding: EdgeInsets.only(top: 19, left: 18, right: 18),
                 child: Text(
                   'Enter a Password.',
                   style: TextStyle(
@@ -139,22 +140,22 @@ class _LoginClassState extends State<LoginClass> {
               Padding(
                 padding: const EdgeInsets.only(left: 18, right: 18),
                 child: TextFormField(
-                  style: TextStyle(color: Colors.white),
+                  style: const TextStyle(color: Colors.white),
                   controller: passwordtextEditingController,
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   obscureText: isPasswordVisibleOne,
                   // keyboardType: TextInputType.visiblePassword,
                   decoration: InputDecoration(
-                    fillColor: Color(0xFF009999),
+                    fillColor: const Color(0xFF009999),
                     filled: true,
                     suffixIcon: IconButton(
-                      color: Color.fromARGB(255, 177, 237, 237),
+                      color: const Color.fromARGB(255, 177, 237, 237),
                       icon: isPasswordVisibleOne
-                          ? Icon(
+                          ? const Icon(
                               Icons.visibility_off,
                               size: 16,
                             )
-                          : Icon(
+                          : const Icon(
                               Icons.visibility,
                               size: 16,
                             ),
@@ -170,13 +171,13 @@ class _LoginClassState extends State<LoginClass> {
                     //   size: 16,
                     //   color: Color.fromARGB(255, 177, 237, 237),
                     // ),
-                    prefixIcon: Icon(
+                    prefixIcon: const Icon(
                       Icons.lock,
                       size: 16,
                       color: Color.fromARGB(255, 177, 237, 237),
                     ),
                     border: InputBorder.none,
-                    hintStyle: TextStyle(
+                    hintStyle: const TextStyle(
                       fontSize: 11,
                       letterSpacing: 1,
                       color: Colors.white,
@@ -191,7 +192,7 @@ class _LoginClassState extends State<LoginClass> {
                 ),
               ),
 
-              SizedBox(
+              const SizedBox(
                 height: 5,
               ),
 
@@ -202,7 +203,7 @@ class _LoginClassState extends State<LoginClass> {
                         backgroundColor: MaterialStateProperty.all(
                           const Color(0xFF009999),
                         ),
-                        side: MaterialStateProperty.all(BorderSide(
+                        side: MaterialStateProperty.all(const BorderSide(
                           color: Color(0xFF009999),
                         )),
                         shape:
@@ -221,7 +222,7 @@ class _LoginClassState extends State<LoginClass> {
                             }
                           },
                     child: _loading
-                        ? SizedBox(
+                        ? const SizedBox(
                             height: 24,
                             width: 24,
                             child: CircularProgressIndicator(
@@ -229,7 +230,7 @@ class _LoginClassState extends State<LoginClass> {
                                 Colors.white,
                               ),
                             ))
-                        : Text(
+                        : const Text(
                             ' login',
                             style: TextStyle(
                               color: Colors.white,
@@ -238,46 +239,16 @@ class _LoginClassState extends State<LoginClass> {
                             ),
                           )),
               ),
-              // Padding(
-              //   padding: const EdgeInsets.only(right: 20),
-              //   child: Row(
-              //     mainAxisAlignment: MainAxisAlignment.end,
-              //     children: [
-              //       ElevatedButton(
-              //           onPressed: () {
-              //             if (loginUserKey.currentState!.validate()) {
-              //               LoginAndAutheniticateUser(context);
-              //             }
-              //           },
-              //           child: Text(
-              //             "Login",
-              //             style: TextStyle(fontSize: 20),
-              //           ),
-              //           style: ButtonStyle(
-              //               backgroundColor: MaterialStateProperty.all(
-              //                 Color.fromARGB(255, 177, 237, 237),
-              //               ),
-              //               padding: MaterialStateProperty.all(EdgeInsets.only(
-              //                 right: 25,
-              //                 left: 20,
-              //               )),
-              //               shape: MaterialStateProperty.all<
-              //                   RoundedRectangleBorder>(RoundedRectangleBorder(
-              //                 borderRadius: BorderRadius.circular(18.0),
-              //               )))),
-              //     ],
-              //   ),
-              // ),
 
               Align(
                   child: TextButton(
                       onPressed: () {
                         Navigator.of(context).push(
                             MaterialPageRoute(builder: (BuildContext context) {
-                          return RegisterClass();
+                          return const RegisterClass();
                         }));
                       },
-                      child: Text(
+                      child: const Text(
                         "You dont Have Account Register",
                         style: TextStyle(
                           color: Color(0xFF383840),
@@ -322,43 +293,6 @@ class _LoginClassState extends State<LoginClass> {
     }
   }
 
-  void LoginAndAutheniticateUser1(BuildContext context) async {
-    // showDialog(
-    //     context: context,
-    //     builder: (BuildContext context) {
-    //       return proressDialogue(
-    //         messsage: 'login please wait...',
-    //       );
-    //     });
-    final User? firebaseUser = (await firebaseAuth
-            .signInWithEmailAndPassword(
-                email: emailtextEditingController.text,
-                password: passwordtextEditingController.text)
-            .catchError((errMsg) {
-      // Navigator.pop(context);
-      displayToastMessage("Email or password are incorrect", context);
-      setState(() {
-        _loading = false;
-      });
-      displayToastMessage("Email or password are incorrect", context);
-    }))
-        .user;
-
-    if (firebaseUser != null) {
-      Navigator.pushNamedAndRemoveUntil(
-          context, MyHomePage.idScreen, (route) => false);
-      // _chekRole();
-      // Navigator.pushNamedAndRemoveUntil(
-      //     context, MyHomePage.idScreen, (route) => false);
-    } else {
-      // Navigator.pop(context);
-      setState(() {
-        _loading = false;
-      });
-      displayToastMessage("Error occured", context);
-    }
-  }
-
   displayToastMessage(String message, BuildContext context) {
     Fluttertoast.showToast(msg: message);
   }
@@ -383,12 +317,16 @@ class _LoginClassState extends State<LoginClass> {
           // Check if the 'role' field exists in the document
           String userRole = data['role'];
           // Boolean status = data['isVerified'];
+          String currentUser = data['id'];
+          String currentUserName = data['displayName'];
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+
+          await prefs.setString('userId', currentUser);
+          await prefs.setString('userName', currentUserName);
           setState(() {
             role = userRole;
           });
-          print("hellowwwwwwwwwwwwwwwwwwwwww");
-          print(role);
-          // Navigation logic...
+
           if (role == 'user') {
             Navigator.pushNamedAndRemoveUntil(
                 context, MyHomePage.idScreen, (route) => false);

@@ -55,6 +55,19 @@ class _PendingLawyerState extends State<PendingLawyer> {
                     return Center(child: CircularProgressIndicator());
                   }
 
+                  if (snapshot.data!.docs.isEmpty) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 18.0),
+                        child: Center(
+                            child: Text(
+                          'There is no Pending Lawyers',
+                          style: TextStyle(fontSize: 10),
+                        )),
+                      ),
+                    );
+                  }
+
                   return ListView(
                     physics: const ScrollPhysics(),
                     shrinkWrap: true,

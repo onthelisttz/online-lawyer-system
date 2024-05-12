@@ -7,6 +7,7 @@ import 'package:online_lawyer_appointment_system/planner/add_planner.dart';
 import 'package:online_lawyer_appointment_system/registration/login.dart';
 import 'package:online_lawyer_appointment_system/registration/register.dart';
 import 'package:online_lawyer_appointment_system/users/userHomepage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:splash_screen_view/SplashScreenView.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
@@ -105,15 +106,16 @@ class _RoleCheckerState extends State<RoleChecker> {
 
   Future<void> _checkRole() async {
     try {
-      User? user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+
+      String? userId = prefs.getString('userId');
+      if (userId == null) {
         // Handle case where user is not authenticated
         return;
       }
-
       final DocumentSnapshot snap = await FirebaseFirestore.instance
           .collection('users')
-          .doc(user.uid)
+          .doc(userId)
           .get();
 
       if (snap.exists) {

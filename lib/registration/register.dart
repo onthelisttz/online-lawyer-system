@@ -843,19 +843,8 @@ class _RegisterClassState extends State<RegisterClass> {
         "PhotoUrl": downloadUrl,
       });
 
-      // Update user display name
-      await firebaseUser.user!
-          .updateDisplayName(nametextEditingController.text.trim());
-
-      // Update user email
-      await firebaseUser.user!
-          .verifyBeforeUpdateEmail(emailtextEditingController.text.trim());
-
       _loading = false;
-      // Navigator.pushReplacementNamed(
-      //   context,
-      //   LoginClass.idScreen,
-      // );
+
       await FirebaseAuth.instance.signOut();
       Navigator.pushNamedAndRemoveUntil(
           context, LoginClass.idScreen, (route) => false);

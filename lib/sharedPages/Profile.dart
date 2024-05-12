@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:online_lawyer_appointment_system/registration/login.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class Profile extends StatefulWidget {
   const Profile({Key? key}) : super(key: key);
@@ -10,13 +11,25 @@ class Profile extends StatefulWidget {
   State<Profile> createState() => _ProfileState();
 }
 
-User? user = FirebaseAuth.instance.currentUser;
-// final Stream<QuerySnapshot> _usersStream = FirebaseFirestore.instance
-//     .collection('user')
-//     .where('id', isEqualTo: user!.uid)
-//     .snapshots();
-
 class _ProfileState extends State<Profile> {
+  String UserID = "";
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserData();
+  }
+
+  Future<void> _fetchUserData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    String? userId = prefs.getString('userId');
+    if (userId != null) {
+      setState(() {
+        UserID = userId;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -32,7 +45,7 @@ class _ProfileState extends State<Profile> {
         ),
       ),
       body: Container(
-        child: user == null
+        child: UserID == null
             ? Center(
                 child:
                     Text("Login or if you have arleady login restart the app"),
@@ -40,7 +53,7 @@ class _ProfileState extends State<Profile> {
             : StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance
                     .collection('users')
-                    .where('id', isEqualTo: user!.uid)
+                    .where('id', isEqualTo: UserID)
                     .snapshots(),
                 builder: (BuildContext context,
                     AsyncSnapshot<QuerySnapshot> snapshot) {
@@ -156,6 +169,10 @@ class _ProfileState extends State<Profile> {
                                   ),
                                   onPressed: () async {
                                     // await FirebaseAuth.instance.signOut();
+                                    SharedPreferences prefs =
+                                        await SharedPreferences.getInstance();
+                                    await prefs.remove('userId');
+                                    await prefs.remove('userName');
                                     await FirebaseAuth.instance.signOut();
                                     Navigator.pushNamedAndRemoveUntil(context,
                                         LoginClass.idScreen, (route) => false);

@@ -31,7 +31,7 @@ class AdminHome extends StatefulWidget {
   const AdminHome({
     Key? key,
   }) : super(key: key);
-  static const String idScreen = "lawyer";
+  static const String idScreen = "adminhomepage";
   @override
   _AdminHomeState createState() => _AdminHomeState();
 }
@@ -48,7 +48,7 @@ class _AdminHomeState extends State<AdminHome> {
   bool showLoading = false;
   bool showLoadingWidget = false;
 
-  final User? currentUser = FirebaseAuth.instance.currentUser;
+  // final User? currentUser = FirebaseAuth.instance.currentUser;
 
   final _firestore = FirebaseFirestore.instance;
   var markerIdToMap;
@@ -63,7 +63,7 @@ class _AdminHomeState extends State<AdminHome> {
   Map<MarkerId, Marker> markers = <MarkerId, Marker>{};
 
   int size = 0;
-  final User? auth = FirebaseAuth.instance.currentUser;
+  // final User? auth = FirebaseAuth.instance.currentUser;
 
   DateTime timeBackPressed = DateTime.now();
 

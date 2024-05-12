@@ -5,6 +5,7 @@ import 'package:flutter/src/foundation/key.dart';
 import 'package:flutter/src/widgets/framework.dart';
 import 'package:intl/intl.dart';
 import 'package:online_lawyer_appointment_system/sharedPages/bookingDetails.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../AllWigtes/Dialog.dart';
 
@@ -15,26 +16,13 @@ class LawyersReminders extends StatefulWidget {
   State<LawyersReminders> createState() => _LawyersRemindersState();
 }
 
-User? user = FirebaseAuth.instance.currentUser;
+// User? user = FirebaseAuth.instance.currentUser;
 
 final DateTime now = DateTime.now(); // Get current date and time
 final DateTime tomorrow = DateTime(
     now.year, now.month, now.day + 1); // Get tomorrow's date without time
 final DateTime dayAfterTomorrow = DateTime(now.year, now.month,
     now.day + 2); // Get the day after tomorrow's date without time
-
-final Stream<QuerySnapshot> _bookingStreams = FirebaseFirestore.instance
-    .collection('bookings')
-    .where("lawyerId", isEqualTo: user!.uid)
-    .where("status", isEqualTo: 'approved')
-    // .where("isNotificationSent", isEqualTo: false)
-    .where("date",
-        isGreaterThanOrEqualTo:
-            Timestamp.fromDate(tomorrow)) // Filter by tomorrow's date or later
-    .where("date",
-        isLessThan: Timestamp.fromDate(
-            dayAfterTomorrow)) // Filter by before the day after tomorrow
-    .snapshots();
 
 String readTimestamp2(Timestamp timestamp) {
   var now = DateTime.now();
@@ -49,195 +37,200 @@ String readTimestamp2(Timestamp timestamp) {
 }
 
 class _LawyersRemindersState extends State<LawyersReminders> {
+  String UserID = "";
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserData();
+  }
+
+  Future<void> _fetchUserData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    String? userId = prefs.getString('userId');
+    if (userId != null) {
+      setState(() {
+        UserID = userId;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        centerTitle: true,
-        elevation: 1,
-        backgroundColor: Color(0xFF009999),
-        iconTheme: IconThemeData(color: Colors.white),
-        title: Text(
-          "Reminders",
-          style: TextStyle(fontSize: 17, letterSpacing: 2, color: Colors.white),
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          centerTitle: true,
+          elevation: 1,
+          backgroundColor: const Color(0xFF009999),
+          iconTheme: const IconThemeData(color: Colors.white),
+          title: const Text(
+            "Reminders",
+            style:
+                TextStyle(fontSize: 17, letterSpacing: 2, color: Colors.white),
+          ),
         ),
-      ),
-      body: Container(
-        color: Color.fromARGB(179, 241, 241, 241),
-        child: Column(
-          children: [
-            // Text(Timestamp.fromDate(today).toString()),
-            StreamBuilder<QuerySnapshot>(
-              stream: _bookingStreams,
-              builder: (BuildContext context,
-                  AsyncSnapshot<QuerySnapshot> snapshot) {
-                if (snapshot.hasError) {
-                  print("ERRRRRRRRRRRRRRRRRRRRRRRRRRRRR");
-                  print(snapshot.error);
-                  return Text('Something went wrong');
-                }
+        body: UserID != null
+            ? Container(
+                color: const Color.fromARGB(179, 241, 241, 241),
+                child: Column(
+                  children: [
+                    // Text(Timestamp.fromDate(today).toString()),
+                    StreamBuilder<QuerySnapshot>(
+                      stream: FirebaseFirestore.instance
+                          .collection('bookings')
+                          .where("lawyerId", isEqualTo: UserID)
+                          .where("status", isEqualTo: 'approved')
+                          .where("date",
+                              isGreaterThanOrEqualTo: Timestamp.fromDate(
+                                  tomorrow)) // Filter by tomorrow's date or later
+                          .where("date",
+                              isLessThan: Timestamp.fromDate(
+                                  dayAfterTomorrow)) // Filter by before the day after tomorrow
+                          .snapshots(),
+                      builder: (BuildContext context,
+                          AsyncSnapshot<QuerySnapshot> snapshot) {
+                        if (snapshot.hasError) {
+                          return const Text('Something went wrong');
+                        }
 
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(child: CircularProgressIndicator());
-                }
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                              child: CircularProgressIndicator());
+                        }
 
-                return ListView(
-                  physics: const ScrollPhysics(),
-                  shrinkWrap: true,
-                  children:
-                      snapshot.data!.docs.map((DocumentSnapshot document) {
-                    Map<String, dynamic> data =
-                        document.data()! as Map<String, dynamic>;
-
-                    sendNotification(data);
-                    return InkWell(
-                      onTap: () {
-                        Navigator.of(context).push(
-                            MaterialPageRoute(builder: (BuildContext context) {
-                          return BookingDetails(
-                            docId: data["id"],
-                          );
-                        }));
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Card(
-                          child: Container(
-                            width: MediaQuery.of(context).size.width,
-                            // ignore: prefer_const_constructors
-                            color: Colors.white,
-                            // decoration: BoxDecoration(border: Border.all()),
+                        if (snapshot.data!.docs.isEmpty) {
+                          return Center(
                             child: Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: IntrinsicHeight(
-                                child: Row(
-                                  children: [
-                                    VerticalDivider(
-                                      thickness: 2,
-                                      width: 20,
-                                      color: data["status"] != "pending"
-                                          ? Colors.green
-                                          : Colors.red,
-                                    ),
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.end,
+                              padding: const EdgeInsets.only(top: 18.0),
+                              child: Center(
+                                  child: Text(
+                                'There are no reminders. Reminders will occur automatically as the appointment date approaches. ',
+                                style: TextStyle(fontSize: 10),
+                              )),
+                            ),
+                          );
+                        }
+
+                        return ListView(
+                          physics: const ScrollPhysics(),
+                          shrinkWrap: true,
+                          children: snapshot.data!.docs
+                              .map((DocumentSnapshot document) {
+                            Map<String, dynamic> data =
+                                document.data()! as Map<String, dynamic>;
+
+                            sendNotification(data);
+                            return InkWell(
+                              onTap: () {
+                                Navigator.of(context).push(MaterialPageRoute(
+                                    builder: (BuildContext context) {
+                                  return BookingDetails(
+                                    docId: data["id"],
+                                  );
+                                }));
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Card(
+                                  child: Container(
+                                    width: MediaQuery.of(context).size.width,
+                                    // ignore: prefer_const_constructors
+                                    color: Colors.white,
+                                    // decoration: BoxDecoration(border: Border.all()),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: IntrinsicHeight(
+                                        child: Row(
                                           children: [
-                                            Text(
-                                              "Appointment date",
-                                              style: TextStyle(
-                                                color: Colors.grey,
-                                              ),
+                                            VerticalDivider(
+                                              thickness: 2,
+                                              width: 20,
+                                              color: data["status"] != "pending"
+                                                  ? Colors.green
+                                                  : Colors.red,
                                             ),
-                                            Padding(
-                                              padding: const EdgeInsets.only(
-                                                  left: 38.0),
-                                              child: Container(
-                                                  decoration: BoxDecoration(
-                                                      color: data["status"] ==
-                                                              "approved"
-                                                          ? Colors.green
-                                                          : Colors.red,
-                                                      borderRadius:
-                                                          BorderRadius.only(
-                                                        bottomLeft:
-                                                            Radius.circular(
-                                                                4.0),
-                                                        bottomRight:
-                                                            Radius.circular(
-                                                                4.0),
-                                                        topLeft:
-                                                            Radius.circular(
-                                                                4.0),
-                                                        topRight:
-                                                            Radius.circular(
-                                                                4.0),
-                                                      )),
-                                                  child: Padding(
-                                                    padding:
-                                                        const EdgeInsets.only(
-                                                            left: 8.0,
-                                                            right: 8.0,
-                                                            top: 1,
-                                                            bottom: 1.0),
-                                                    child: Text(
-                                                      data["status"] ==
-                                                              "approved"
-                                                          ? "Approved"
-                                                          : data["status"] ==
-                                                                  "pending"
-                                                              ? "Pending"
-                                                              : "Rejected",
+                                            Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.end,
+                                                  children: [
+                                                    const Text(
+                                                      "Appointment date",
                                                       style: TextStyle(
-                                                        color: Colors.white,
+                                                        color: Colors.grey,
                                                       ),
                                                     ),
-                                                  )),
-                                            ),
-                                          ],
-                                        ),
-                                        Padding(
-                                          padding:
-                                              const EdgeInsets.only(top: 8.0),
-                                          child: Row(
-                                            children: [
-                                              Icon(
-                                                Icons.timer_sharp,
-                                                size: 15,
-                                              ),
-                                              Padding(
-                                                padding: const EdgeInsets.only(
-                                                    left: 8.0),
-                                                child: Text(readTimestamp2(
-                                                    data["date"])),
-                                              ),
-                                              Padding(
-                                                padding: const EdgeInsets.only(
-                                                    left: 8.0),
-                                                child: Text(data['time']),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        // Container(
-                                        //   decoration: BoxDecoration(
-                                        //     border: Border(
-                                        //       bottom: BorderSide(
-                                        //           color: Colors.lightGreen, width: 5.0),
-                                        //     ),
-                                        //   ),
-                                        // ),
-                                        Padding(
-                                          padding: const EdgeInsets.all(8.0),
-                                          child: Container(
-                                            width: MediaQuery.of(context)
-                                                    .size
-                                                    .width -
-                                                80,
-                                            height: 1,
-                                            color: Colors.grey.withOpacity(0.5),
-                                          ),
-                                        ),
-                                        Row(
-                                          children: [
-                                            Padding(
-                                              padding: const EdgeInsets.only(
-                                                  left: 8.0),
-                                              child: Column(
-                                                children: [
-                                                  Text("Client " +
-                                                      data['clientName']),
-                                                  Row(
+                                                    Padding(
+                                                      padding:
+                                                          const EdgeInsets.only(
+                                                              left: 38.0),
+                                                      child: Container(
+                                                          decoration:
+                                                              BoxDecoration(
+                                                                  color: data["status"] ==
+                                                                          "approved"
+                                                                      ? Colors
+                                                                          .green
+                                                                      : Colors
+                                                                          .red,
+                                                                  borderRadius:
+                                                                      const BorderRadius
+                                                                          .only(
+                                                                    bottomLeft:
+                                                                        Radius.circular(
+                                                                            4.0),
+                                                                    bottomRight:
+                                                                        Radius.circular(
+                                                                            4.0),
+                                                                    topLeft: Radius
+                                                                        .circular(
+                                                                            4.0),
+                                                                    topRight: Radius
+                                                                        .circular(
+                                                                            4.0),
+                                                                  )),
+                                                          child: Padding(
+                                                            padding:
+                                                                const EdgeInsets
+                                                                    .only(
+                                                                    left: 8.0,
+                                                                    right: 8.0,
+                                                                    top: 1,
+                                                                    bottom:
+                                                                        1.0),
+                                                            child: Text(
+                                                              data["status"] ==
+                                                                      "approved"
+                                                                  ? "Approved"
+                                                                  : data["status"] ==
+                                                                          "pending"
+                                                                      ? "Pending"
+                                                                      : "Rejected",
+                                                              style:
+                                                                  const TextStyle(
+                                                                color: Colors
+                                                                    .white,
+                                                              ),
+                                                            ),
+                                                          )),
+                                                    ),
+                                                  ],
+                                                ),
+                                                Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                          top: 8.0),
+                                                  child: Row(
                                                     children: [
-                                                      Icon(
-                                                        Icons.title_outlined,
-                                                        size: 10,
-                                                        color: Colors.grey,
+                                                      const Icon(
+                                                        Icons.timer_sharp,
+                                                        size: 15,
                                                       ),
                                                       Padding(
                                                         padding:
@@ -245,75 +238,140 @@ class _LawyersRemindersState extends State<LawyersReminders> {
                                                                 .only(
                                                                 left: 8.0),
                                                         child: Text(
-                                                          data["title"],
-                                                          style: TextStyle(
-                                                            color: Colors.grey,
-                                                          ),
-                                                        ),
+                                                            readTimestamp2(
+                                                                data["date"])),
+                                                      ),
+                                                      Padding(
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .only(
+                                                                left: 8.0),
+                                                        child:
+                                                            Text(data['time']),
                                                       ),
                                                     ],
                                                   ),
-                                                ],
-                                              ),
+                                                ),
+                                                // Container(
+                                                //   decoration: BoxDecoration(
+                                                //     border: Border(
+                                                //       bottom: BorderSide(
+                                                //           color: Colors.lightGreen, width: 5.0),
+                                                //     ),
+                                                //   ),
+                                                // ),
+                                                Padding(
+                                                  padding:
+                                                      const EdgeInsets.all(8.0),
+                                                  child: Container(
+                                                    width:
+                                                        MediaQuery.of(context)
+                                                                .size
+                                                                .width -
+                                                            80,
+                                                    height: 1,
+                                                    color: Colors.grey
+                                                        .withOpacity(0.5),
+                                                  ),
+                                                ),
+                                                Row(
+                                                  children: [
+                                                    Padding(
+                                                      padding:
+                                                          const EdgeInsets.only(
+                                                              left: 8.0),
+                                                      child: Column(
+                                                        children: [
+                                                          Text("Client " +
+                                                              data[
+                                                                  'clientName']),
+                                                          Row(
+                                                            children: [
+                                                              const Icon(
+                                                                Icons
+                                                                    .title_outlined,
+                                                                size: 10,
+                                                                color:
+                                                                    Colors.grey,
+                                                              ),
+                                                              Padding(
+                                                                padding:
+                                                                    const EdgeInsets
+                                                                        .only(
+                                                                        left:
+                                                                            8.0),
+                                                                child: Text(
+                                                                  data["title"],
+                                                                  style:
+                                                                      const TextStyle(
+                                                                    color: Colors
+                                                                        .grey,
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                //  CircleAvatar(
+                                                //   radius: 32,
+                                                //   child: ClipOval(
+                                                //     child: CachedNetworkImage(
+                                                //       imageUrl: widget.chatData['house']
+                                                //           ['imageUrlList'],
+                                                //       placeholder: (context, url) => Center(
+                                                //         child: CircularProgressIndicator(),
+                                                //       ),
+                                                //       errorWidget: (context, url, error) =>
+                                                //           Icon(Icons.error),
+                                                //       fit: BoxFit.cover,
+                                                //       width: 60,
+                                                //       height: 60,
+                                                //       fadeInCurve: Curves.easeIn,
+                                                //       fadeInDuration: Duration(seconds: 2),
+                                                //       fadeOutCurve: Curves.easeOut,
+                                                //       fadeOutDuration: Duration(seconds: 2),
+                                                //     ),
+                                                //   ),
+                                                // ),
+
+                                                // Row(
+                                                //   crossAxisAlignment: CrossAxisAlignment.end,
+                                                //   children: [
+                                                //     Text("MUsas"),
+                                                //   ],
+                                                // )
+                                              ],
                                             ),
                                           ],
                                         ),
-                                        //  CircleAvatar(
-                                        //   radius: 32,
-                                        //   child: ClipOval(
-                                        //     child: CachedNetworkImage(
-                                        //       imageUrl: widget.chatData['house']
-                                        //           ['imageUrlList'],
-                                        //       placeholder: (context, url) => Center(
-                                        //         child: CircularProgressIndicator(),
-                                        //       ),
-                                        //       errorWidget: (context, url, error) =>
-                                        //           Icon(Icons.error),
-                                        //       fit: BoxFit.cover,
-                                        //       width: 60,
-                                        //       height: 60,
-                                        //       fadeInCurve: Curves.easeIn,
-                                        //       fadeInDuration: Duration(seconds: 2),
-                                        //       fadeOutCurve: Curves.easeOut,
-                                        //       fadeOutDuration: Duration(seconds: 2),
-                                        //     ),
-                                        //   ),
-                                        // ),
-
-                                        // Row(
-                                        //   crossAxisAlignment: CrossAxisAlignment.end,
-                                        //   children: [
-                                        //     Text("MUsas"),
-                                        //   ],
-                                        // )
-                                      ],
+                                      ),
                                     ),
-                                  ],
+                                  ),
                                 ),
                               ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
+                            );
+                          }).toList(),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              )
+            : Container());
   }
 
   sendNotification(data) {
     if (!data["isNotificationSent"]) {
       print("ONRRT");
-      // sendSmsToLawyer(data);
-      // sendSmsToClient(data);
-      // sendEmailToLawyer(data);
-      // sendEmailToClient(data);
-      //   updateNotificationSent(data["id"]);
+      sendSmsToLawyer(data);
+      sendSmsToClient(data);
+      sendEmailToLawyer(data);
+      sendEmailToClient(data);
+      updateNotificationSent(data["id"]);
     }
   }
 
