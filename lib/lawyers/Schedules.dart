@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:online_lawyer_appointment_system/AllWigtes/Dialog.dart';
+import 'package:online_lawyer_appointment_system/lawyers/addWeeklySchedule.dart';
 import 'package:online_lawyer_appointment_system/sharedPages/bookingDetails.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:time_planner/time_planner.dart';
@@ -55,6 +56,15 @@ class _SchedulePageState extends State<SchedulePage> {
           ),
           elevation: 0,
         ),
+        floatingActionButton: FloatingActionButton(
+            child: Icon(Icons.edit_calendar_outlined),
+            heroTag: 'add-weely-schedule',
+            onPressed: () {
+              Navigator.of(context)
+                  .push(MaterialPageRoute(builder: (BuildContext context) {
+                return ScheduleForm();
+              }));
+            }),
         body: UserID != null
             ? Center(
                 child: StreamBuilder<QuerySnapshot>(

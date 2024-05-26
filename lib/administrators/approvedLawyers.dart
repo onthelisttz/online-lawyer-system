@@ -5,6 +5,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:online_lawyer_appointment_system/sharedPages/userDetails.dart';
 import 'package:online_lawyer_appointment_system/users/BookAppointments.dart';
 
 class ApprovedLawyer extends StatefulWidget {
@@ -70,7 +71,18 @@ class _ApprovedLawyerState extends State<ApprovedLawyer> {
                           child: Card(
                             color: Color.fromARGB(255, 255, 255, 255),
                             child: ListTile(
-                              onTap: () async {},
+                              onTap: () async {
+                                Navigator.of(context).push(MaterialPageRoute(
+                                    builder: (BuildContext context) {
+                                  return UserDetails(
+                                    docId: data["id"],
+                                  );
+                                }));
+                              },
+                              trailing: Icon(
+                                Icons.arrow_forward_ios_rounded,
+                                size: 12,
+                              ),
                               leading: CircleAvatar(
                                 backgroundColor: Color(0xFF009999),
                                 radius: 24,
@@ -101,15 +113,16 @@ class _ApprovedLawyerState extends State<ApprovedLawyer> {
                                         size: 10,
                                         color: Color(0xFF009999),
                                       ),
-                                      Padding(
-                                        padding:
-                                            const EdgeInsets.only(left: 1.0),
+                                      SizedBox(width: 4),
+                                      Flexible(
                                         child: Text(
                                           data['location'],
-                                          // data['location'],
                                           style: TextStyle(
                                             color: Colors.grey,
                                           ),
+                                          overflow: TextOverflow.ellipsis,
+                                          maxLines: 1,
+                                          softWrap: false,
                                         ),
                                       ),
                                     ],

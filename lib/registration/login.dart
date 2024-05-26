@@ -60,6 +60,17 @@ class _LoginClassState extends State<LoginClass> {
               const Padding(
                 padding: EdgeInsets.only(top: 19, left: 18, right: 18),
                 child: Text(
+                  'Find your best lawyer here',
+                  style: TextStyle(
+                    fontSize: 14,
+                    letterSpacing: 1,
+                    color: Colors.black,
+                  ),
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.only(left: 18, right: 18),
+                child: Text(
                   'Name.',
                   style: TextStyle(
                     fontSize: 14,

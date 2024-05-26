@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -24,7 +21,7 @@ class BookAppointments extends StatefulWidget {
 }
 
 TextEditingController titletextEditingController = TextEditingController();
-TextEditingController adescriptiontextEditingController =
+TextEditingController descriptiontextEditingController =
     TextEditingController();
 TextEditingController locationtextEditingController = TextEditingController();
 TextEditingController datetextEditingController = TextEditingController();
@@ -41,19 +38,38 @@ class _BookAppointmentsState extends State<BookAppointments> {
   String selectedCountry = 'user';
   bool _loading = false;
   DateTime date = DateTime.now();
-  // TimeOfDay? time;
   String currentTime = DateFormat.Hm().format(DateTime.now());
-
   DateTime timeBackPressed = DateTime.now();
 
   TextEditingController _controller = TextEditingController();
   String userName = "";
   String UserID = "";
+  final Map<String, TimeRange?> _schedule = {};
+  final List<String> _daysOfWeek = [
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday'
+  ];
+
+  TimeRange? selectedDayWorkingHours;
 
   @override
   void initState() {
     super.initState();
     _fetchUserData();
+    _fetchScheduleData();
+    clearFormData();
+  }
+
+  clearFormData() {
+    titletextEditingController.clear();
+    descriptiontextEditingController.clear();
+    locationtextEditingController.clear();
+    datetextEditingController.clear();
   }
 
   Future<void> _fetchUserData() async {
@@ -66,12 +82,69 @@ class _BookAppointmentsState extends State<BookAppointments> {
       });
     }
 
-    String? userName = prefs.getString('userName');
-    if (userName != null) {
+    String? userNames = prefs.getString('userName');
+
+    if (userNames != null) {
       setState(() {
-        userName = userName;
+        userName = userNames;
       });
     }
+  }
+
+  bool isDateSelectable(DateTime day) {
+    // Disable previous dates
+    if (day.isBefore(DateTime.now())) {
+      return false;
+    }
+
+    String dayName = DateFormat('EEEE').format(day);
+    if (_schedule.isNotEmpty && !_schedule.containsKey(dayName)) {
+      return false;
+    }
+
+    TimeRange? workingHours = _schedule[dayName];
+    if (_schedule.isNotEmpty && workingHours == null) {
+      return false;
+    }
+
+    return true;
+  }
+
+  Future<void> _fetchScheduleData() async {
+    FirebaseFirestore firestore = FirebaseFirestore.instance;
+    QuerySnapshot scheduleSnapshot = await firestore
+        .collection('schedules')
+        .where('lawyerId', isEqualTo: widget.lawyerId)
+        .limit(1)
+        .get();
+
+    if (scheduleSnapshot.docs.isNotEmpty) {
+      Map<String, dynamic> scheduleData = (scheduleSnapshot.docs.first.data()
+          as Map<String, dynamic>)['schedule'];
+
+      setState(() {
+        scheduleData.forEach((key, value) {
+          _schedule[key] = TimeRange(
+            openingTime: TimeOfDay(
+              hour: int.parse(value['openingTime'].split(':')[0]),
+              minute: int.parse(value['openingTime'].split(':')[1]),
+            ),
+            closingTime: TimeOfDay(
+              hour: int.parse(value['closingTime'].split(':')[0]),
+              minute: int.parse(value['closingTime'].split(':')[1]),
+            ),
+          );
+        });
+      });
+      print(scheduleData);
+    }
+  }
+
+  Future<DateTime> getValidInitialDate(DateTime initialDate) async {
+    while (!isDateSelectable(initialDate)) {
+      initialDate = initialDate.add(const Duration(days: 1));
+    }
+    return initialDate;
   }
 
   @override
@@ -151,7 +224,7 @@ class _BookAppointmentsState extends State<BookAppointments> {
                     padding: const EdgeInsets.only(top: 1, left: 18, right: 18),
                     child: TextFormField(
                       style: const TextStyle(color: Colors.white),
-                      controller: adescriptiontextEditingController,
+                      controller: descriptiontextEditingController,
                       keyboardType: TextInputType.text,
                       decoration: InputDecoration(
                         fillColor: const Color(0xFF009999),
@@ -164,7 +237,7 @@ class _BookAppointmentsState extends State<BookAppointments> {
                             size: 16,
                           ),
                           onPressed: () {
-                            adescriptiontextEditingController.clear();
+                            descriptiontextEditingController.clear();
                           },
                         ),
                         prefixIcon: const Icon(
@@ -194,46 +267,61 @@ class _BookAppointmentsState extends State<BookAppointments> {
                     ),
                   ),
                   Padding(
-                      padding:
-                          const EdgeInsets.only(top: 1, left: 18, right: 18),
-                      child: InkWell(
-                        onTap: () async {
-                          DateTime? newDate = await showDatePicker(
-                            context: context,
-                            initialDate: date,
-                            // firstDate: DateTime(2024),
-                            firstDate: DateTime.now()
-                                .subtract(const Duration(days: 0)),
-                            lastDate: DateTime(2100),
-                          );
-                          if (newDate == null) return;
-                          setState(() {
-                            date = newDate;
-                          });
-                        },
-                        child: Container(
-                          height: 46.0,
-                          width: double.infinity,
-                          decoration: const BoxDecoration(
-                              color: Color(0xFF009999),
-                              borderRadius: BorderRadius.only(
-                                bottomLeft: Radius.circular(5.0),
-                                bottomRight: Radius.circular(5.0),
-                                topLeft: Radius.circular(5.0),
-                                topRight: Radius.circular(5.0),
-                              )),
-                          child: Padding(
-                            padding: const EdgeInsets.only(top: 14.0, left: 8),
-                            child: Text(
-                              '${date.day}/ ${date.month}/ ${date.year} ',
-                              style: const TextStyle(
-                                  fontSize: 14,
-                                  letterSpacing: 1,
-                                  color: Colors.white),
+                    padding: const EdgeInsets.only(top: 1, left: 18, right: 18),
+                    child: InkWell(
+                      onTap: () async {
+                        DateTime initialDate = await getValidInitialDate(date);
+                        DateTime? newDate = await showDatePicker(
+                          context: context,
+                          initialDate: initialDate,
+                          firstDate:
+                              DateTime.now().subtract(const Duration(days: 0)),
+                          lastDate: DateTime(2100),
+                          selectableDayPredicate: isDateSelectable,
+                        );
+                        if (newDate == null) return;
+
+                        setState(() {
+                          date = newDate;
+                          String dayName = DateFormat('EEEE').format(newDate);
+                          selectedDayWorkingHours = _schedule[dayName];
+                        });
+                      },
+                      child: Container(
+                        height: 46.0,
+                        width: double.infinity,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF009999),
+                          borderRadius: BorderRadius.all(Radius.circular(5.0)),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 14.0, left: 8),
+                          child: Text(
+                            '${date.day}/${date.month}/${date.year}',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              letterSpacing: 1,
+                              color: Colors.white,
                             ),
                           ),
                         ),
-                      )),
+                      ),
+                    ),
+                  ),
+                  if (selectedDayWorkingHours != null) ...[
+                    Padding(
+                      padding:
+                          const EdgeInsets.only(top: 18, left: 18, right: 18),
+                      child: Text(
+                        'Working Hours: ${selectedDayWorkingHours!.openingTime.format(context)} - ${selectedDayWorkingHours!.closingTime.format(context)}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          letterSpacing: 1,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ),
+                  ],
                   const Padding(
                     padding: EdgeInsets.only(top: 18, left: 18, right: 18),
                     child: Text(
@@ -252,7 +340,6 @@ class _BookAppointmentsState extends State<BookAppointments> {
                         );
                         if (selectedTime == null) return;
                         setState(() {
-                          // currentTime = selectedTime;
                           currentTime =
                               '${selectedTime.hour}:${selectedTime.minute}';
                         });
@@ -311,13 +398,7 @@ class _BookAppointmentsState extends State<BookAppointments> {
                                   setState(() {
                                     _loading = true;
                                   });
-                                  // registerNewUser(context);
                                   requestLawyerAppointment();
-
-                                  // Navigator.of(context).push(
-                                  //     MaterialPageRoute(builder: (BuildContext context) {
-                                  //   return MyHomePage();
-                                  // }));
                                 }
                               },
                         child: _loading
@@ -344,37 +425,47 @@ class _BookAppointmentsState extends State<BookAppointments> {
   }
 
   Future requestLawyerAppointment() async {
-    print(currentTime);
-// Assuming currentTime is in the format 'HH:mm'
-
-// Convert currentTime to TimeOfDay
     List<String> timeParts = currentTime.split(':');
     int hour = int.parse(timeParts[0]);
     int minute = int.parse(timeParts[1]);
     TimeOfDay selectedTime = TimeOfDay(hour: hour, minute: minute);
 
-// Define the start and end times for working hours
-    TimeOfDay startTime = const TimeOfDay(hour: 7, minute: 59);
-    TimeOfDay endTime = const TimeOfDay(hour: 19, minute: 0);
+    // Check if the schedule is not empty and get the working hours for the selected day
+    if (selectedDayWorkingHours != null) {
+      TimeOfDay openingTime = selectedDayWorkingHours!.openingTime;
+      TimeOfDay closingTime = selectedDayWorkingHours!.closingTime;
 
-// Check if the selected time is within working hours
-    if (selectedTime.hour < startTime.hour ||
-        (selectedTime.hour == startTime.hour &&
-            selectedTime.minute < startTime.minute) ||
-        selectedTime.hour > endTime.hour ||
-        (selectedTime.hour == endTime.hour &&
-            selectedTime.minute > endTime.minute)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-              'Selected time is not within working hours (8:00 AM - 7:00 PM)'),
-        ),
-      );
-      setState(() {
-        _loading = false;
-      });
-      return;
+      // Check if the selected time is within the working hours
+      if ((selectedTime.hour < openingTime.hour ||
+              (selectedTime.hour == openingTime.hour &&
+                  selectedTime.minute < openingTime.minute)) ||
+          (selectedTime.hour > closingTime.hour ||
+              (selectedTime.hour == closingTime.hour &&
+                  selectedTime.minute > closingTime.minute))) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+                'Selected time is not within working hours (${openingTime.format(context)} - ${closingTime.format(context)})'),
+          ),
+        );
+        setState(() {
+          _loading = false;
+        });
+        return;
+      }
     }
+
+    // else {
+    //   ScaffoldMessenger.of(context).showSnackBar(
+    //     const SnackBar(
+    //       content: Text('No working hours available for the selected day'),
+    //     ),
+    //   );
+    //   setState(() {
+    //     _loading = false;
+    //   });
+    //   return;
+    // }
 
     await document.set({
       'id': document.id,
@@ -385,23 +476,33 @@ class _BookAppointmentsState extends State<BookAppointments> {
       "lawyerName": widget.lawyerName!,
       "lawyerId": widget.lawyerId!,
       "title": titletextEditingController.text,
-      "description": adescriptiontextEditingController.text,
+      "description": descriptiontextEditingController.text,
       "status": "pending",
       "isNotificationSent": false,
       "isPayed": false,
       "controlNumber": "",
       "PostedAt": FieldValue.serverTimestamp(),
     });
+
     setState(() {
       _loading = false;
     });
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Booked Successfull'),
+        content: Text('Booked Successfully'),
       ),
     );
+
     Navigator.pop(context);
   }
 
   final document = FirebaseFirestore.instance.collection('bookings').doc();
+}
+
+class TimeRange {
+  final TimeOfDay openingTime;
+  final TimeOfDay closingTime;
+
+  TimeRange({required this.openingTime, required this.closingTime});
 }

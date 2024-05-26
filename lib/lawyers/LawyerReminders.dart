@@ -526,11 +526,23 @@ Best regards,
     }
   }
 
-  Future<void> updateNotificationSent(DocumentSnapshot data) async {
+  // Future<void> updateNotificationSent(DocumentSnapshot data) async {
+  //   try {
+  //     await FirebaseFirestore.instance
+  //         .collection('bookings')
+  //         .doc(data.id)
+  //         .update({'isNotificationSent': true});
+  //     print('Notification status updated successfully');
+  //   } catch (error) {
+  //     print('Error updating notification status: $error');
+  //   }
+  // }
+
+  Future<void> updateNotificationSent(id) async {
     try {
       await FirebaseFirestore.instance
           .collection('bookings')
-          .doc(data.id)
+          .doc(id)
           .update({'isNotificationSent': true});
       print('Notification status updated successfully');
     } catch (error) {

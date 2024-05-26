@@ -1,10 +1,8 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/gestures.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -17,26 +15,61 @@ import 'dart:io';
 
 import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/gestures.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
-import 'package:path/path.dart' as Path;
 import 'package:permission_handler/permission_handler.dart';
-
-import '../main.dart';
 
 const List<String> list = <String>[
   'user',
   'lawyer',
 ];
+
+const tanzaniaData = {
+  'Dar es Salaam': {
+    'Ilala': ['Buguruni', 'Kariakoo', 'Kivukoni', 'Upanga West', 'Upanga East'],
+    'Kinondoni': ['Kawe', 'Msasani', 'Oysterbay', 'Sinza', 'Mikocheni'],
+    'Temeke': ['Chang\'ombe', 'Keko', 'Kurasini', 'Sandali', 'Mbagala'],
+    'Ubungo': ['Kimara', 'Saranga', 'Sinza', 'Goba', 'Mbezi'],
+    'Kigamboni': ['Kigamboni', 'Kibada', 'Mji Mwema', 'Somangila', 'Kigamboni'],
+  },
+  'Arusha': {
+    'Arusha City': ['Baraa', 'Kaloleni', 'Levolosi', 'Ngarenaro', 'Sokon I'],
+    'Arusha Rural': ['Bangata', 'Moshono', 'Nduruma', 'Oltrumet', 'Usa River'],
+    'Karatu': ['Baray', 'Endabash', 'Mangola', 'Mbulumbulu', 'Qangdend'],
+    'Longido': [
+      'Engarenaibor',
+      'Kitumbeine',
+      'Longido',
+      'Olmolog',
+      'Mundarara'
+    ],
+    'Monduli': ['Engaruka', 'Esilalei', 'Lolkisale', 'Mto wa Mbu', 'Selela'],
+  },
+  'Dodoma': {
+    'Dodoma Urban': [
+      'Chang\'ombe',
+      'Hazina',
+      'Kikuyu North',
+      'Kikuyu South',
+      'Makole'
+    ],
+    'Bahi': ['Bahi', 'Chifutuka', 'Chitemo', 'Ibugule', 'Ilindi'],
+    'Chamwino': ['Buigiri', 'Fufu', 'Haneti', 'Manda', 'Manchali'],
+    'Chemba': ['Chemba', 'Churuku', 'Farkwa', 'Goima', 'Kwamtoro'],
+    'Kondoa': ['Bereko', 'Bumbuta', 'Hondomairo', 'Kikore', 'Kinyasi'],
+  },
+  'Mwanza': {
+    'Nyamagana': ['Mbugani', 'Mirongo', 'Mkuyuni', 'Nyakato', 'Igoma'],
+    'Ilemela': ['Bugogwa', 'Buswelu', 'Kirumba', 'Nyamanoro', 'Pasiansi'],
+    'Sengerema': ['Buchosa', 'Kagunga', 'Katwe', 'Nyamazugo', 'Sima'],
+    'Kwimba': ['Bupamwa', 'Fukalo', 'Hungumalwa', 'Kikubiji', 'Lyoma'],
+    'Magu': ['Bujashi', 'Jinjimili', 'Kahangara', 'Kisesa', 'Ndagalu'],
+  },
+  // Add more regions, districts, and wards as needed
+};
 
 class RegisterClass extends StatefulWidget {
   const RegisterClass({Key? key}) : super(key: key);
@@ -53,11 +86,16 @@ TextEditingController PhoneNumbertextEditingController =
     TextEditingController();
 TextEditingController passwordtextEditingController = TextEditingController();
 TextEditingController _confirmPasswordController = TextEditingController();
+TextEditingController specializationtextEditingController =
+    TextEditingController();
 
 bool isPasswordVisibleOne = true;
 bool isPasswordVisible = true;
 
 class _RegisterClassState extends State<RegisterClass> {
+  String? selectedRegion;
+  String? selectedDistrict;
+  String? selectedWard;
   final GlobalKey<FormState> reigsterUser = GlobalKey<FormState>();
   Completer<GoogleMapController> _controllerGoogleMap = Completer();
   GoogleMapController? newGoogleMapController;
@@ -68,7 +106,7 @@ class _RegisterClassState extends State<RegisterClass> {
   String selectedCountry = 'user';
   bool _loading = false;
   static final CameraPosition _cameraPosition =
-      CameraPosition(target: LatLng(-6.7924, 39.2083), zoom: 11.5);
+      const CameraPosition(target: LatLng(-6.7924, 39.2083), zoom: 11.5);
 
   Position? currentPosition;
   var geolocator = Geolocator();
@@ -94,18 +132,6 @@ class _RegisterClassState extends State<RegisterClass> {
     }
   }
 
-  // void LocatePosition() async {
-  //   Position position = await Geolocator.getCurrentPosition();
-
-  //   currentPosition = position;
-  //   LatLng latLangPosition = LatLng(position.latitude, position.longitude);
-  //   CameraPosition cameraPosition =
-  //       new CameraPosition(target: latLangPosition, zoom: 14);
-
-  //   newGoogleMapController!
-  //       .animateCamera(CameraUpdate.newCameraPosition(cameraPosition));
-  // }
-
   final User? currentUser = FirebaseAuth.instance.currentUser;
 
   var markerIdToMap;
@@ -122,7 +148,7 @@ class _RegisterClassState extends State<RegisterClass> {
     });
   }
 
-  Icon fab = Icon(
+  Icon fab = const Icon(
     Icons.map,
     color: Color.fromARGB(255, 177, 237, 237),
   );
@@ -160,16 +186,48 @@ class _RegisterClassState extends State<RegisterClass> {
     });
   }
 
+  File? _selectedFile;
+  String? _fileName;
+  bool _isUploading = false;
+  bool _isPickingFile = false;
+
+  Future<void> _pickPDFFile() async {
+    setState(() {
+      _isPickingFile = true;
+    });
+
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf'],
+      );
+
+      if (result != null && result.files.single.path != null) {
+        setState(() {
+          _selectedFile = File(result.files.single.path!);
+          _fileName = result.files.single.name;
+        });
+      }
+    } catch (e) {
+      // Handle the error here, you might want to show a SnackBar or a Dialog
+      print("Error picking file: $e");
+    } finally {
+      setState(() {
+        _isPickingFile = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Color(0xFF009999),
+        backgroundColor: const Color(0xFF009999),
         automaticallyImplyLeading: false,
         titleSpacing: 0,
         centerTitle: true,
         elevation: 0,
-        title: Text(
+        title: const Text(
           'Registrations',
           style: TextStyle(fontSize: 11, letterSpacing: 1, color: Colors.white),
         ),
@@ -177,11 +235,11 @@ class _RegisterClassState extends State<RegisterClass> {
       body: Form(
         key: reigsterUser,
         child: Padding(
-          padding: EdgeInsets.all(8.0),
+          padding: const EdgeInsets.all(8.0),
           child: ListView(
             children: [
-              Padding(
-                padding: const EdgeInsets.all(8.0),
+              const Padding(
+                padding: EdgeInsets.all(8.0),
                 child: Text(
                   'profile',
                   style: TextStyle(
@@ -197,13 +255,13 @@ class _RegisterClassState extends State<RegisterClass> {
                             chooseImage();
                           },
                           child: CircleAvatar(
-                            backgroundColor: Color(0xFF009999),
+                            backgroundColor: const Color(0xFF009999),
                             radius: 60,
                             child: ClipOval(
                               child: _image == null
                                   ? Container()
                                   : Container(
-                                      margin: EdgeInsets.all(3),
+                                      margin: const EdgeInsets.all(3),
                                       decoration: BoxDecoration(
                                           image: DecorationImage(
                                               image: FileImage(_image!),
@@ -222,12 +280,13 @@ class _RegisterClassState extends State<RegisterClass> {
                           child: ClipOval(
                             child: Container(
                               color: Colors.white,
-                              padding: EdgeInsets.all(3.0),
+                              padding: const EdgeInsets.all(3.0),
                               child: ClipOval(
                                 child: Container(
-                                  padding: EdgeInsets.all(8.0),
-                                  color: Color.fromARGB(255, 177, 237, 237),
-                                  child: Icon(
+                                  padding: const EdgeInsets.all(8.0),
+                                  color:
+                                      const Color.fromARGB(255, 177, 237, 237),
+                                  child: const Icon(
                                     Icons.add_a_photo,
                                     color: Color(0xFF009999),
                                     size: 20,
@@ -240,27 +299,29 @@ class _RegisterClassState extends State<RegisterClass> {
                   ],
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.only(top: 18, left: 18, right: 18),
+
+              const Padding(
+                padding: EdgeInsets.only(top: 18, left: 18, right: 18),
                 child: Text(
-                  'Username.',
+                  'Full Name.',
                   style: TextStyle(
                       fontSize: 14, letterSpacing: 1, color: Colors.black),
                 ),
               ),
+
               Padding(
                 padding: const EdgeInsets.only(top: 1, left: 18, right: 18),
                 child: TextFormField(
-                  style: TextStyle(color: Colors.white),
+                  style: const TextStyle(color: Colors.white),
                   controller: nametextEditingController,
                   keyboardType: TextInputType.text,
                   decoration: InputDecoration(
-                    fillColor: Color(0xFF009999),
+                    fillColor: const Color(0xFF009999),
                     filled: true,
                     border: InputBorder.none,
                     suffixIcon: IconButton(
-                      color: Color.fromARGB(255, 177, 237, 237),
-                      icon: Icon(
+                      color: const Color.fromARGB(255, 177, 237, 237),
+                      icon: const Icon(
                         Icons.close,
                         size: 16,
                       ),
@@ -268,12 +329,12 @@ class _RegisterClassState extends State<RegisterClass> {
                         nametextEditingController.clear();
                       },
                     ),
-                    prefixIcon: Icon(
+                    prefixIcon: const Icon(
                       Icons.person,
                       size: 16,
                       color: Color.fromARGB(255, 177, 237, 237),
                     ),
-                    hintStyle: TextStyle(
+                    hintStyle: const TextStyle(
                         fontSize: 11, letterSpacing: 1, color: Colors.white),
                     hintText: "E.g john Doe",
                   ),
@@ -284,8 +345,9 @@ class _RegisterClassState extends State<RegisterClass> {
                   },
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.only(top: 19, left: 18, right: 18),
+
+              const Padding(
+                padding: EdgeInsets.only(top: 19, left: 18, right: 18),
                 child: Text(
                   'Email Address.',
                   style: TextStyle(
@@ -295,15 +357,15 @@ class _RegisterClassState extends State<RegisterClass> {
               Padding(
                 padding: const EdgeInsets.only(left: 18, right: 18),
                 child: TextFormField(
-                  style: TextStyle(color: Colors.white),
+                  style: const TextStyle(color: Colors.white),
                   controller: emailtextEditingController,
                   keyboardType: TextInputType.emailAddress,
                   decoration: InputDecoration(
-                    fillColor: Color(0xFF009999),
+                    fillColor: const Color(0xFF009999),
                     filled: true,
                     suffixIcon: IconButton(
-                      color: Color.fromARGB(255, 177, 237, 237),
-                      icon: Icon(
+                      color: const Color.fromARGB(255, 177, 237, 237),
+                      icon: const Icon(
                         Icons.close,
                         size: 16,
                       ),
@@ -311,13 +373,13 @@ class _RegisterClassState extends State<RegisterClass> {
                         emailtextEditingController.clear();
                       },
                     ),
-                    prefixIcon: Icon(
+                    prefixIcon: const Icon(
                       Icons.email,
                       size: 16,
                       color: Color.fromARGB(255, 177, 237, 237),
                     ),
                     border: InputBorder.none,
-                    hintStyle: TextStyle(
+                    hintStyle: const TextStyle(
                         fontSize: 11, letterSpacing: 1, color: Colors.white),
                     hintText: "E.g johnDoe@gmail.com",
                   ),
@@ -334,67 +396,202 @@ class _RegisterClassState extends State<RegisterClass> {
                   },
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.only(top: 8, left: 18, right: 18),
+              const Padding(
+                padding: EdgeInsets.only(top: 8, left: 18, right: 18),
                 child: Text(
-                  'location.',
+                  'Region.',
                   style: TextStyle(
                       fontSize: 14, letterSpacing: 1, color: Colors.black),
                 ),
               ),
+
               Padding(
-                padding: const EdgeInsets.only(top: 1, left: 18, right: 18),
-                child: Container(
-                    height: 46.0,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                        color: Color(0xFF009999),
-                        borderRadius: BorderRadius.only(
-                          bottomLeft: Radius.circular(5.0),
-                          bottomRight: Radius.circular(5.0),
-                          topLeft: Radius.circular(5.0),
-                          topRight: Radius.circular(5.0),
-                        )),
-                    child: Center(
-                      child: TextFormField(
-                        style: TextStyle(color: Colors.white),
-                        controller: locationtextEditingController,
-                        keyboardType: TextInputType.text,
-                        decoration: InputDecoration(
-                          fillColor: Color(0xFF009999),
-                          filled: true,
-                          border: InputBorder.none,
-                          suffixIcon: IconButton(
-                            color: Color.fromARGB(255, 177, 237, 237),
-                            icon: Icon(
-                              Icons.close,
-                              size: 16,
-                            ),
-                            onPressed: () {
-                              locationtextEditingController.clear();
-                            },
-                          ),
-                          prefixIcon: Icon(
-                            Icons.location_on,
-                            size: 16,
-                            color: Color.fromARGB(255, 177, 237, 237),
-                          ),
-                          hintStyle: TextStyle(
-                              fontSize: 11,
-                              letterSpacing: 1,
-                              color: Colors.white),
-                          hintText: "Location",
-                        ),
-                        validator: (String? value) {
-                          if (value!.isEmpty) {
-                            return "location required";
-                          }
-                        },
-                      ),
-                    )),
+                padding: EdgeInsets.only(top: 3, left: 18, right: 18),
+                child: DropdownButtonFormField<String>(
+                  hint: const Text(
+                    'Select Region',
+                    style: TextStyle(
+                      fontSize: 14,
+                      letterSpacing: 1,
+                      color: Colors.white,
+                    ),
+                  ),
+                  value: selectedRegion,
+                  dropdownColor: Color(0xFF009999),
+                  icon: const Icon(Icons.arrow_downward,
+                      color: Color(0xFFa0daf2)),
+                  elevation: 16,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(
+                    fillColor: Color(0xFF009999),
+                    filled: true,
+                    border: InputBorder.none,
+                  ),
+                  onChanged: (newValue) {
+                    setState(() {
+                      selectedRegion = newValue;
+                      selectedDistrict = null;
+                      selectedWard = null;
+                    });
+                  },
+                  items: tanzaniaData.keys.map((region) {
+                    return DropdownMenuItem(
+                      child: Text(region),
+                      value: region,
+                    );
+                  }).toList(),
+                ),
               ),
-              Padding(
-                padding: const EdgeInsets.only(top: 19, left: 18, right: 18),
+
+              if (selectedRegion != null)
+                const Padding(
+                  padding: EdgeInsets.only(top: 8, left: 18, right: 18),
+                  child: Text(
+                    'District.',
+                    style: TextStyle(
+                        fontSize: 14, letterSpacing: 1, color: Colors.black),
+                  ),
+                ),
+              if (selectedRegion != null)
+                Padding(
+                  padding: EdgeInsets.only(top: 3, left: 18, right: 18),
+                  child: DropdownButtonFormField<String>(
+                    hint: const Text(
+                      'Select District',
+                      style: TextStyle(
+                        fontSize: 14,
+                        letterSpacing: 1,
+                        color: Colors.white,
+                      ),
+                    ),
+                    value: selectedDistrict,
+                    dropdownColor: Color(0xFF009999),
+                    icon: const Icon(Icons.arrow_downward,
+                        color: Color(0xFFa0daf2)),
+                    elevation: 16,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: const InputDecoration(
+                      fillColor: Color(0xFF009999),
+                      filled: true,
+                      border: InputBorder.none,
+                    ),
+                    onChanged: (newValue) {
+                      setState(() {
+                        selectedDistrict = newValue;
+                        selectedWard = null;
+                      });
+                    },
+                    items: tanzaniaData[selectedRegion!]!.keys.map((district) {
+                      return DropdownMenuItem(
+                        child: Text(district),
+                        value: district,
+                      );
+                    }).toList(),
+                  ),
+                ),
+
+              // Ward Dropdown
+              if (selectedDistrict != null)
+                const Padding(
+                  padding: EdgeInsets.only(top: 8, left: 18, right: 18),
+                  child: Text(
+                    'Ward.',
+                    style: TextStyle(
+                        fontSize: 14, letterSpacing: 1, color: Colors.black),
+                  ),
+                ),
+              if (selectedDistrict != null)
+                Padding(
+                  padding: EdgeInsets.only(top: 3, left: 18, right: 18),
+                  child: DropdownButtonFormField<String>(
+                    hint: const Text(
+                      'Select Ward',
+                      style: TextStyle(
+                        fontSize: 14,
+                        letterSpacing: 1,
+                        color: Colors.white,
+                      ),
+                    ),
+                    value: selectedWard,
+                    dropdownColor: Color(0xFF009999),
+                    icon: const Icon(Icons.arrow_downward,
+                        color: Color(0xFFa0daf2)),
+                    elevation: 16,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: const InputDecoration(
+                      fillColor: Color(0xFF009999),
+                      filled: true,
+                      border: InputBorder.none,
+                    ),
+                    onChanged: (newValue) {
+                      setState(() {
+                        selectedWard = newValue;
+                      });
+                    },
+                    items: tanzaniaData[selectedRegion!]![selectedDistrict!]!
+                        .map((ward) {
+                      return DropdownMenuItem(
+                        child: Text(ward),
+                        value: ward,
+                      );
+                    }).toList(),
+                  ),
+                ),
+
+              // Padding(
+              //   padding: const EdgeInsets.only(top: 1, left: 18, right: 18),
+              //   child: Container(
+              //       height: 46.0,
+              //       width: double.infinity,
+              //       decoration: const BoxDecoration(
+              //           color: Color(0xFF009999),
+              //           borderRadius: BorderRadius.only(
+              //             bottomLeft: Radius.circular(5.0),
+              //             bottomRight: Radius.circular(5.0),
+              //             topLeft: Radius.circular(5.0),
+              //             topRight: Radius.circular(5.0),
+              //           )),
+              //       child: Center(
+              //         child: TextFormField(
+              //           style: const TextStyle(color: Colors.white),
+              //           controller: locationtextEditingController,
+              //           keyboardType: TextInputType.text,
+              //           decoration: InputDecoration(
+              //             fillColor: const Color(0xFF009999),
+              //             filled: true,
+              //             border: InputBorder.none,
+              //             suffixIcon: IconButton(
+              //               color: const Color.fromARGB(255, 177, 237, 237),
+              //               icon: const Icon(
+              //                 Icons.close,
+              //                 size: 16,
+              //               ),
+              //               onPressed: () {
+              //                 locationtextEditingController.clear();
+              //               },
+              //             ),
+              //             prefixIcon: const Icon(
+              //               Icons.location_on,
+              //               size: 16,
+              //               color: Color.fromARGB(255, 177, 237, 237),
+              //             ),
+              //             hintStyle: const TextStyle(
+              //                 fontSize: 11,
+              //                 letterSpacing: 1,
+              //                 color: Colors.white),
+              //             hintText: "Location",
+              //           ),
+              //           validator: (String? value) {
+              //             if (value!.isEmpty) {
+              //               return "location required";
+              //             }
+              //           },
+              //         ),
+              //       )),
+              // ),
+
+              const Padding(
+                padding: EdgeInsets.only(top: 8, left: 18, right: 18),
                 child: Text(
                   'Phone Number.',
                   style: TextStyle(
@@ -404,17 +601,17 @@ class _RegisterClassState extends State<RegisterClass> {
               Padding(
                 padding: const EdgeInsets.only(top: 1, left: 18, right: 18),
                 child: TextFormField(
-                  style: TextStyle(color: Colors.white),
+                  style: const TextStyle(color: Colors.white),
                   controller: PhoneNumbertextEditingController,
                   maxLength: 10,
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(
-                    fillColor: Color(0xFF009999),
+                    fillColor: const Color(0xFF009999),
                     filled: true,
                     border: InputBorder.none,
                     suffixIcon: IconButton(
-                      color: Color.fromARGB(255, 177, 237, 237),
-                      icon: Icon(
+                      color: const Color.fromARGB(255, 177, 237, 237),
+                      icon: const Icon(
                         Icons.close,
                         size: 16,
                       ),
@@ -422,12 +619,12 @@ class _RegisterClassState extends State<RegisterClass> {
                         PhoneNumbertextEditingController.clear();
                       },
                     ),
-                    prefixIcon: Icon(
+                    prefixIcon: const Icon(
                       Icons.call,
                       size: 16,
                       color: Color.fromARGB(255, 177, 237, 237),
                     ),
-                    hintStyle: TextStyle(
+                    hintStyle: const TextStyle(
                         fontSize: 11, letterSpacing: 1, color: Colors.white),
                     hintText: "Phone number",
                   ),
@@ -443,8 +640,8 @@ class _RegisterClassState extends State<RegisterClass> {
                   },
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.only(top: 19, left: 18, right: 18),
+              const Padding(
+                padding: EdgeInsets.only(top: 3, left: 18, right: 18),
                 child: Text(
                   'Enter a Password.',
                   style: TextStyle(
@@ -454,20 +651,20 @@ class _RegisterClassState extends State<RegisterClass> {
               Padding(
                 padding: const EdgeInsets.only(left: 18, right: 18),
                 child: TextFormField(
-                  style: TextStyle(color: Colors.white),
+                  style: const TextStyle(color: Colors.white),
                   controller: passwordtextEditingController,
                   obscureText: isPasswordVisibleOne,
                   decoration: InputDecoration(
-                    fillColor: Color(0xFF009999),
+                    fillColor: const Color(0xFF009999),
                     filled: true,
                     suffixIcon: IconButton(
-                      color: Color.fromARGB(255, 177, 237, 237),
+                      color: const Color.fromARGB(255, 177, 237, 237),
                       icon: isPasswordVisibleOne
-                          ? Icon(
+                          ? const Icon(
                               Icons.visibility_off,
                               size: 16,
                             )
-                          : Icon(
+                          : const Icon(
                               Icons.visibility,
                               size: 16,
                             ),
@@ -477,13 +674,13 @@ class _RegisterClassState extends State<RegisterClass> {
                         });
                       },
                     ),
-                    prefixIcon: Icon(
+                    prefixIcon: const Icon(
                       Icons.lock,
                       size: 16,
                       color: Color.fromARGB(255, 177, 237, 237),
                     ),
                     border: InputBorder.none,
-                    hintStyle: TextStyle(
+                    hintStyle: const TextStyle(
                         fontSize: 11, letterSpacing: 1, color: Colors.white),
                     hintText: "*******",
                   ),
@@ -494,8 +691,8 @@ class _RegisterClassState extends State<RegisterClass> {
                   },
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.only(top: 19, left: 18, right: 18),
+              const Padding(
+                padding: EdgeInsets.only(top: 19, left: 18, right: 18),
                 child: Text(
                   'Comfirm Password.',
                   style: TextStyle(
@@ -505,20 +702,20 @@ class _RegisterClassState extends State<RegisterClass> {
               Padding(
                 padding: const EdgeInsets.only(left: 18, right: 18),
                 child: TextFormField(
-                  style: TextStyle(color: Colors.white),
+                  style: const TextStyle(color: Colors.white),
                   controller: _confirmPasswordController,
                   obscureText: isPasswordVisible,
                   decoration: InputDecoration(
-                    fillColor: Color(0xFF009999),
+                    fillColor: const Color(0xFF009999),
                     filled: true,
                     suffixIcon: IconButton(
-                      color: Color.fromARGB(255, 177, 237, 237),
+                      color: const Color.fromARGB(255, 177, 237, 237),
                       icon: isPasswordVisible
-                          ? Icon(
+                          ? const Icon(
                               Icons.visibility_off,
                               size: 16,
                             )
-                          : Icon(
+                          : const Icon(
                               Icons.visibility,
                               size: 16,
                             ),
@@ -528,13 +725,13 @@ class _RegisterClassState extends State<RegisterClass> {
                         });
                       },
                     ),
-                    prefixIcon: Icon(
+                    prefixIcon: const Icon(
                       Icons.lock,
                       size: 16,
                       color: Color.fromARGB(255, 177, 237, 237),
                     ),
                     border: InputBorder.none,
-                    hintStyle: TextStyle(
+                    hintStyle: const TextStyle(
                         fontSize: 11, letterSpacing: 1, color: Colors.white),
                     hintText: "*******",
                   ),
@@ -550,24 +747,34 @@ class _RegisterClassState extends State<RegisterClass> {
                   },
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.only(top: 19, left: 18, right: 18),
+              const Padding(
+                padding: EdgeInsets.only(top: 19, left: 18, right: 18),
                 child: Text(
                   'Role',
                   style: TextStyle(
                       fontSize: 14, letterSpacing: 1, color: Colors.white),
                 ),
               ),
+              const Padding(
+                padding: EdgeInsets.only(top: 8, left: 18, right: 18),
+                child: Text(
+                  'Role',
+                  style: TextStyle(
+                      fontSize: 14, letterSpacing: 1, color: Colors.black),
+                ),
+              ),
+
               Padding(
                 padding: const EdgeInsets.only(left: 18, right: 18),
                 child: DropdownButtonFormField<String>(
                   // style: TextStyle(color: Colors.white),
                   value: dropdownValue,
+                  dropdownColor: Color(0xFF009999),
                   icon: const Icon(Icons.arrow_downward,
                       color: Color(0xFFa0daf2)),
                   elevation: 16,
-                  // style: const TextStyle(color: Colors.deepPurple),
-                  decoration: InputDecoration(
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(
                     fillColor: Color(0xFF009999),
                     filled: true,
                     border: InputBorder.none,
@@ -587,129 +794,123 @@ class _RegisterClassState extends State<RegisterClass> {
                   }).toList(),
                 ),
               ),
-              SizedBox(
+              const SizedBox(
                 height: 20,
               ),
-              // Container(
-              //   height: 300,
-              //   child: Stack(
-              //     children: <Widget>[
-              //       GestureDetector(
-              //         child: GoogleMap(
-              //           mapType: _currentMapType,
-              //           myLocationButtonEnabled: false,
-              //           myLocationEnabled: true,
-              //           zoomControlsEnabled: false,
-              //           gestureRecognizers: {
-              //             Factory<OneSequenceGestureRecognizer>(
-              //               () => EagerGestureRecognizer(),
-              //             )
-              //           },
-              //           zoomGesturesEnabled: true,
-              //           initialCameraPosition: _cameraPosition,
-              //           markers: Set.from(myMarker),
-              //           onTap: _handleTap,
-              //           onMapCreated: (GoogleMapController controller) {
-              //             if (!_controllerGoogleMap.isCompleted) {
-              //               _controllerGoogleMap.complete(controller);
-              //             } else {}
 
-              //             newGoogleMapController = controller;
-              //             LocatePosition();
-              //           },
-              //         ),
-              //       ),
-              //       Positioned(
-              //         bottom: 58,
-              //         left: 5,
-              //         child: InkWell(
-              //           onTap: () {
-              //             _toggleMapType();
-              //             setState(() {
-              //               if (fabIconNumber == 0) {
-              //                 fab = Icon(
-              //                   Icons.layers,
-              //                   color: Color.fromARGB(255, 177, 237, 237),
-              //                 );
-              //                 fabIconNumber = 1;
-              //               } else {
-              //                 fab = Icon(
-              //                   Icons.map,
-              //                   color: Color.fromARGB(255, 177, 237, 237),
-              //                 );
-              //                 fabIconNumber = 0;
-              //               }
-              //             });
-              //           },
-              //           child: Container(
-              //             decoration: BoxDecoration(
-              //                 color: Color(0xFF009999),
-              //                 borderRadius: BorderRadius.only(
-              //                   bottomLeft: Radius.circular(7.0),
-              //                   bottomRight: Radius.circular(7.0),
-              //                   topLeft: Radius.circular(7.0),
-              //                   topRight: Radius.circular(7.0),
-              //                 )),
-              //             width: 40,
-              //             height: 43,
-              //             child: Column(
-              //               children: [
-              //                 fab,
-              //                 Text(
-              //                   "Map",
-              //                   style: TextStyle(
-              //                       color: Color.fromARGB(255, 177, 237, 237),
-              //                       fontSize: 12),
-              //                 )
-              //               ],
-              //             ),
-              //           ),
-              //         ),
-              //       ),
-              //       Positioned(
-              //         bottom: 10,
-              //         left: 5,
-              //         child: InkWell(
-              //           onTap: () {
-              //             LocatePosition();
-              //           },
-              //           child: Container(
-              //             width: 40,
-              //             height: 43,
-              //             child: Column(
-              //               children: [
-              //                 Icon(
-              //                   Icons.my_location,
-              //                   color: Color.fromARGB(255, 177, 237, 237),
-              //                 ),
-              //                 Text(
-              //                   "Me",
-              //                   style: TextStyle(
-              //                       color: Color.fromARGB(255, 177, 237, 237),
-              //                       fontSize: 12),
-              //                 )
-              //               ],
-              //             ),
-              //             decoration: BoxDecoration(
-              //                 color: Color(0xFF009999),
-              //                 borderRadius: BorderRadius.only(
-              //                   bottomLeft: Radius.circular(5.0),
-              //                   bottomRight: Radius.circular(5.0),
-              //                   topLeft: Radius.circular(5.0),
-              //                   topRight: Radius.circular(5.0),
-              //                 )),
-              //           ),
-              //         ),
-              //       ),
-              //     ],
-              //   ),
+              dropdownValue == 'lawyer'
+                  ? const Padding(
+                      padding: EdgeInsets.only(top: 18, left: 18, right: 18),
+                      child: Text(
+                        'Lawyer Specialization',
+                        style: TextStyle(
+                            fontSize: 14,
+                            letterSpacing: 1,
+                            color: Colors.black),
+                      ),
+                    )
+                  : Container(),
+
+              dropdownValue == 'lawyer'
+                  ? Padding(
+                      padding:
+                          const EdgeInsets.only(top: 1, left: 18, right: 18),
+                      child: TextFormField(
+                        style: const TextStyle(color: Colors.white),
+                        controller: specializationtextEditingController,
+                        keyboardType: TextInputType.text,
+                        decoration: InputDecoration(
+                          fillColor: const Color(0xFF009999),
+                          filled: true,
+                          border: InputBorder.none,
+                          suffixIcon: IconButton(
+                            color: const Color.fromARGB(255, 177, 237, 237),
+                            icon: const Icon(
+                              Icons.close,
+                              size: 16,
+                            ),
+                            onPressed: () {
+                              specializationtextEditingController.clear();
+                            },
+                          ),
+                          prefixIcon: const Icon(
+                            Icons.person,
+                            size: 16,
+                            color: Color.fromARGB(255, 177, 237, 237),
+                          ),
+                          hintStyle: const TextStyle(
+                              fontSize: 11,
+                              letterSpacing: 1,
+                              color: Colors.white),
+                          hintText: "E.g Real Estates",
+                        ),
+                        validator: (String? value) {
+                          if (value!.isEmpty) {
+                            return 'Specialization required';
+                          }
+                        },
+                      ),
+                    )
+                  : Container(),
+
+              dropdownValue == 'lawyer'
+                  ? const Padding(
+                      padding: EdgeInsets.only(top: 18, left: 18, right: 18),
+                      child: Text(
+                        'Lawyer Verfication Document',
+                        style: TextStyle(
+                            fontSize: 14,
+                            letterSpacing: 1,
+                            color: Colors.black),
+                      ),
+                    )
+                  : Container(),
+
+              dropdownValue == 'lawyer'
+                  ? Padding(
+                      padding:
+                          const EdgeInsets.only(top: 1, left: 18, right: 18),
+                      child: Container(
+                        color: const Color(0xFF009999),
+                        child: InkWell(
+                          onTap: _pickPDFFile,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Text(
+                                  _selectedFile != null
+                                      ? _fileName.toString()
+                                      : "Select PDF File",
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    letterSpacing: 1,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                              const Padding(
+                                padding: EdgeInsets.all(8.0),
+                                child: Icon(
+                                  Icons.picture_as_pdf_rounded,
+                                  color: Colors.white,
+                                ),
+                              )
+                            ],
+                          ),
+                        ),
+                      ),
+                    )
+                  : Container(),
+
+              // FloatingActionButton(
+              //   child: Icon(Icons.add),
+              //   onPressed: () {
+              //     registerNewUserImgaf(context);
+              //   },
               // ),
 
-              // InkWell(
-              //     onTap: () {
-              //       registerNewUserImgaf();
-              //     },
-              //     child: Text("Phone number")),
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: OutlinedButton(
@@ -717,7 +918,7 @@ class _RegisterClassState extends State<RegisterClass> {
                         backgroundColor: MaterialStateProperty.all(
                           const Color(0xFF009999),
                         ),
-                        side: MaterialStateProperty.all(BorderSide(
+                        side: MaterialStateProperty.all(const BorderSide(
                           color: Color.fromARGB(255, 177, 237, 237),
                         )),
                         shape:
@@ -741,7 +942,7 @@ class _RegisterClassState extends State<RegisterClass> {
                             }
                           },
                     child: _loading
-                        ? SizedBox(
+                        ? const SizedBox(
                             height: 24,
                             width: 24,
                             child: CircularProgressIndicator(
@@ -749,7 +950,7 @@ class _RegisterClassState extends State<RegisterClass> {
                                 Color.fromARGB(255, 255, 255, 255),
                               ),
                             ))
-                        : Text(
+                        : const Text(
                             ' Register',
                             style: TextStyle(
                               color: Color.fromARGB(255, 255, 255, 255),
@@ -793,39 +994,89 @@ class _RegisterClassState extends State<RegisterClass> {
     }
   }
 
-  registerNewUserImgaf() async {
+  Future<void> registerNewUserImgaf(BuildContext context) async {
     try {
-      String phoneNumber = PhoneNumbertextEditingController.text.trim();
-      phoneNumber = '255' + phoneNumber.substring(1);
-      print(phoneNumber);
+      print("UPLOAD START");
+      final fileName = _fileName!;
+      final ref = FirebaseStorage.instance.ref().child('pdfs/${fileName}');
+
+      SettableMetadata metadata = SettableMetadata(
+        cacheControl: 'max-age=3600',
+        contentType: 'application/pdf',
+      );
+      await ref.putFile(_selectedFile!, metadata);
+
+      final String downloadUrl = await ref.getDownloadURL();
+
+      print("DOWNLOAD URL ISSSSSS THE FOLLOWING");
+      print(downloadUrl);
     } catch (e) {
-      // Handle errors here
       displayToastMessage("Failed to upload image , $e", context);
       print("Error uploading image: $e");
-      // You can also show an error message to the user using a Snackbar or Toast
     }
   }
 
   final FirebaseAuth firebaseAuth = FirebaseAuth.instance;
   registerNewUser(BuildContext context) async {
     try {
+      String finalLocation = "";
+      if (selectedRegion == null) {
+        displayToastMessage("Location Is Required", context);
+        return;
+      } else {
+        finalLocation =
+            '${selectedRegion ?? ""} ${selectedDistrict ?? ""} ${selectedWard ?? ""}';
+      }
+      if (_image == null) {
+        displayToastMessage("Profile Picture is required", context);
+        return;
+      }
+
+      if (_fileName == null && dropdownValue == 'lawyer') {
+        displayToastMessage("Lawyer document is required", context);
+        return;
+      }
       String phoneNumber = PhoneNumbertextEditingController.text.trim();
       phoneNumber = '255' + phoneNumber.substring(1);
 
-      print(phoneNumber);
+      String specializations = "";
+      String documentUrlForSpecilization = "";
+      if (dropdownValue == 'lawyer') {
+        specializations = specializationtextEditingController.text.trim();
+      }
+
+      if (_fileName != null && dropdownValue == 'lawyer') {
+        final fileName = _fileName!;
+        final ref = FirebaseStorage.instance.ref().child('pdfs/${fileName}');
+
+        SettableMetadata metadata = SettableMetadata(
+          cacheControl: 'max-age=3600',
+          contentType: 'application/pdf',
+        );
+        await ref.putFile(_selectedFile!, metadata);
+        documentUrlForSpecilization = await ref.getDownloadURL();
+      }
+      // Upload image to Firebase Storage
+      final ref = FirebaseStorage.instance
+          .ref()
+          .child('images/${Path.basename(_image!.path)}');
+      SettableMetadata metadata = SettableMetadata(
+        cacheControl: 'max-age=3600',
+        contentType: 'image/jpeg',
+      );
+
+      await ref.putFile(_image!, metadata);
+      final String downloadUrl = await ref.getDownloadURL();
+
       final firebaseUser =
           await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: emailtextEditingController.text,
         password: passwordtextEditingController.text,
       );
 
-      // Upload image to Firebase Storage
-      final ref = FirebaseStorage.instance
-          .ref()
-          .child('images/${Path.basename(_image!.path)}');
-      await ref.putFile(_image!);
-      final String downloadUrl = await ref.getDownloadURL();
-
+      setState(() {
+        _loading = false;
+      });
       // Save user data to Firestore
       await FirebaseFirestore.instance
           .collection("users")
@@ -836,26 +1087,30 @@ class _RegisterClassState extends State<RegisterClass> {
         "displayName": nametextEditingController.text.trim(),
         "email": emailtextEditingController.text.trim(),
         "phoneNo": phoneNumber,
-        "location": locationtextEditingController.text.trim(),
-        "mapLocation": GeoPoint(-6.1659, 39.2026), // Your hardcoded coordinates
+        "location": finalLocation,
+        "mapLocation":
+            const GeoPoint(-6.1659, 39.2026), // Your hardcoded coordinates
         "created_at": FieldValue.serverTimestamp(),
         "role": dropdownValue,
         "PhotoUrl": downloadUrl,
-      });
 
-      _loading = false;
+        "lawyerSpecialization": specializations,
+        "lawyerDocument": documentUrlForSpecilization,
+      });
+      setState(() {
+        _loading = true;
+      });
 
       await FirebaseAuth.instance.signOut();
       Navigator.pushNamedAndRemoveUntil(
           context, LoginClass.idScreen, (route) => false);
       Navigator.of(context)
           .push(MaterialPageRoute(builder: (BuildContext context) {
-        return LoginClass();
+        return const LoginClass();
       }));
       displayToastMessage("Your Account has been created", context);
-      // User data saved successfully
-      // You may want to navigate to another screen or show a success message here
     } catch (e) {
+      //  displayToastMessage(e, context);
       // Handle errors here
       print("Error registering user: $e");
       // You can also show an error message to the user using a Snackbar or Toast
@@ -864,20 +1119,5 @@ class _RegisterClassState extends State<RegisterClass> {
 
   displayToastMessage(String message, BuildContext context) {
     Fluttertoast.showToast(msg: message);
-  }
-
-  Future updateEmail(String newEmail, BuildContext context) async {
-    var message;
-    User? user = FirebaseAuth.instance.currentUser;
-    user!
-        .updateEmail(newEmail)
-        .then(
-          (value) => message,
-        )
-        .catchError(
-          (onError) => message = displayToastMessage(
-              "Error on displaying email $onError", context),
-        );
-    return message;
   }
 }

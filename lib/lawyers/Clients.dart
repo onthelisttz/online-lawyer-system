@@ -6,6 +6,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:online_lawyer_appointment_system/sharedPages/userDetails.dart';
 import 'package:online_lawyer_appointment_system/users/BookAppointments.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:telephony/telephony.dart';
@@ -76,19 +77,30 @@ class _ClientsState extends State<Clients> {
                             child: Card(
                               color: Colors.white,
                               child: ListTile(
-                                leading: CircleAvatar(
-                                  backgroundColor: Color(0xFF009999),
-                                  radius: 24,
-                                  child: ClipOval(
-                                    child: data['PhotoUrl'] == null
-                                        ? Text('Dr',
-                                            style: TextStyle(fontSize: 17))
-                                        : Image.network(
-                                            data['PhotoUrl'],
-                                            height: 100,
-                                            width: 100,
-                                            fit: BoxFit.fill,
-                                          ),
+                                leading: InkWell(
+                                  onTap: () {
+                                    Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                            builder: (BuildContext context) {
+                                      return UserDetails(
+                                        docId: data["id"],
+                                      );
+                                    }));
+                                  },
+                                  child: CircleAvatar(
+                                    backgroundColor: Color(0xFF009999),
+                                    radius: 24,
+                                    child: ClipOval(
+                                      child: data['PhotoUrl'] == null
+                                          ? Text('Dr',
+                                              style: TextStyle(fontSize: 17))
+                                          : Image.network(
+                                              data['PhotoUrl'],
+                                              height: 100,
+                                              width: 100,
+                                              fit: BoxFit.fill,
+                                            ),
+                                    ),
                                   ),
                                 ),
                                 title: Text(data["displayName"],
@@ -97,11 +109,16 @@ class _ClientsState extends State<Clients> {
                                   children: [
                                     Icon(Icons.location_on,
                                         size: 10, color: Color(0xFF009999)),
-                                    Padding(
-                                      padding: const EdgeInsets.only(left: 1.0),
+                                    SizedBox(width: 4),
+                                    Flexible(
                                       child: Text(
                                         data['location'],
-                                        style: TextStyle(color: Colors.grey),
+                                        style: TextStyle(
+                                          color: Colors.grey,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                        maxLines: 1,
+                                        softWrap: false,
                                       ),
                                     ),
                                   ],

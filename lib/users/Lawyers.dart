@@ -5,6 +5,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:online_lawyer_appointment_system/sharedPages/userDetails.dart';
 import 'package:online_lawyer_appointment_system/users/BookAppointments.dart';
 
 class Lawyers extends StatefulWidget {
@@ -62,20 +63,7 @@ class _LawyersState extends State<Lawyers> {
                         snapshot.data!.docs.map((DocumentSnapshot document) {
                       Map<String, dynamic> data =
                           document.data()! as Map<String, dynamic>;
-                      // return ListTile(
-                      //   title: Text(data['title']),
-                      //   subtitle: Text(data['des']),
-                      // );
-                      // LatLng locationmap = LatLng(data['mapLocation'].latitude,
-                      //     data['mapLocation'].longitude);
-                      // double distanceInMeters = Geolocator.distanceBetween(
-                      //   currentPosition!.latitude,
-                      //   currentPosition!.longitude,
-                      //   data['mapLocation'].latitude,
-                      //   data['mapLocation'].longitude,
-                      // );
 
-                      // double kms = distanceInMeters / 1000;
                       double kms = 2000;
 
                       return Padding(
@@ -83,38 +71,32 @@ class _LawyersState extends State<Lawyers> {
                           child: Card(
                             color: Color.fromARGB(255, 255, 255, 255),
                             child: ListTile(
-                              onTap: () async {
-                                // markers.clear();
-                                // CameraPosition _kLakes =
-                                //     CameraPosition(
-                                //         target: locationmap,
-                                //         zoom: 15);
-                                // final GoogleMapController
-                                //     controller =
-                                //     await _controller.future;
-                                // controller.animateCamera(
-                                //     CameraUpdate
-                                //         .newCameraPosition(
-                                //             _kLakes));
-                                // addMarkers(locationmap);
-                                // print("NNNNNNNNNNNNNNNNNNNNNNNN");
-                                // print(locationmap);
-                              },
-                              leading: CircleAvatar(
-                                backgroundColor: Color(0xFF009999),
-                                radius: 24,
-                                child: ClipOval(
-                                  child: data['PhotoUrl'] == null
-                                      ? Text(
-                                          'Dr',
-                                          style: TextStyle(fontSize: 17),
-                                        )
-                                      : Image.network(
-                                          data['PhotoUrl'],
-                                          height: 100,
-                                          width: 100,
-                                          fit: BoxFit.fill,
-                                        ),
+                              onTap: () async {},
+                              leading: InkWell(
+                                onTap: () {
+                                  Navigator.of(context).push(MaterialPageRoute(
+                                      builder: (BuildContext context) {
+                                    return UserDetails(
+                                      docId: data["id"],
+                                    );
+                                  }));
+                                },
+                                child: CircleAvatar(
+                                  backgroundColor: Color(0xFF009999),
+                                  radius: 24,
+                                  child: ClipOval(
+                                    child: data['PhotoUrl'] == null
+                                        ? Text(
+                                            'Dr',
+                                            style: TextStyle(fontSize: 17),
+                                          )
+                                        : Image.network(
+                                            data['PhotoUrl'],
+                                            height: 100,
+                                            width: 100,
+                                            fit: BoxFit.fill,
+                                          ),
+                                  ),
                                 ),
                               ),
                               title: Text(
@@ -135,6 +117,27 @@ class _LawyersState extends State<Lawyers> {
                                             const EdgeInsets.only(left: 1.0),
                                         child: Text(
                                           data['location'],
+                                          // data['location'],
+                                          style: TextStyle(
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.star_border_outlined,
+                                        size: 13,
+                                        color: Color(0xFF009999),
+                                      ),
+                                      Padding(
+                                        padding:
+                                            const EdgeInsets.only(left: 1.0),
+                                        child: Text(
+                                          data['lawyerSpecialization']
+                                              .toString(),
                                           // data['location'],
                                           style: TextStyle(
                                             color: Colors.grey,

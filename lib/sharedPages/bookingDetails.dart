@@ -312,8 +312,8 @@ class _BookingDetailsState extends State<BookingDetails> {
                                               ],
                                             ),
                                             const SizedBox(height: 12),
-                                            if (data["status"] ==
-                                                "pending") ...[
+                                            if (data["status"] == "pending" &&
+                                                UserID != data["clientId"]) ...[
                                               Row(
                                                 mainAxisAlignment:
                                                     MainAxisAlignment.end,
