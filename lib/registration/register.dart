@@ -305,7 +305,9 @@ class _RegisterClassState extends State<RegisterClass> {
                 child: Text(
                   'Full Name.',
                   style: TextStyle(
-                      fontSize: 14, letterSpacing: 1, color: Colors.black),
+                      fontSize: 14,
+                      letterSpacing: 1,
+                      color: Color.fromARGB(255, 31, 9, 9)),
                 ),
               ),
 
