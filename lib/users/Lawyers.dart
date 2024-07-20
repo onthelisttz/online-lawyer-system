@@ -112,15 +112,15 @@ class _LawyersState extends State<Lawyers> {
                                         size: 10,
                                         color: Color(0xFF009999),
                                       ),
-                                      Padding(
-                                        padding:
-                                            const EdgeInsets.only(left: 1.0),
+                                      Flexible(
                                         child: Text(
                                           data['location'],
-                                          // data['location'],
                                           style: TextStyle(
                                             color: Colors.grey,
                                           ),
+                                          overflow: TextOverflow.ellipsis,
+                                          maxLines: 1,
+                                          softWrap: false,
                                         ),
                                       ),
                                     ],
@@ -181,54 +181,6 @@ class _LawyersState extends State<Lawyers> {
                                       letterSpacing: 2,
                                     ),
                                   )),
-
-                              // trailing: Column(
-                              //   children: [
-                              //     Row(
-                              //       mainAxisAlignment:
-                              //           MainAxisAlignment.end,
-                              //       children: [
-                              //         Text(
-                              //           'a',
-                              //           style: TextStyle(
-                              //             color: Colors.grey,
-                              //           ),
-                              //         ),
-                              //         OutlinedButton(
-                              //             style: ButtonStyle(
-                              //                 // backgroundColor: MaterialStateProperty.all(
-                              //                 //   const Color(0xFFf2dfce),
-                              //                 // ),
-                              //                 side:
-                              //                     MaterialStateProperty
-                              //                         .all(BorderSide(
-                              //                   color:
-                              //                       Color(0xFF009999),
-                              //                 )),
-                              //                 shape: MaterialStateProperty.all<
-                              //                         RoundedRectangleBorder>(
-                              //                     RoundedRectangleBorder(
-                              //                   borderRadius:
-                              //                       BorderRadius
-                              //                           .circular(18.0),
-                              //                 ))),
-                              //             onPressed: () {},
-                              //             child: Text(
-                              //               '12 km',
-                              //               style: TextStyle(
-                              //                 color: Color(0xFF009999),
-                              //                 fontSize: 14,
-                              //                 letterSpacing: 2,
-                              //               ),
-                              //             )),
-
-                              //         // FloatingActionButton(
-                              //         //     onPressed: () {},
-                              //         //     child: Icon(Icons.visibility_off))
-                              //       ],
-                              //     ),
-                              //   ],
-                              // ),
                             ),
                           ));
                     }).toList(),

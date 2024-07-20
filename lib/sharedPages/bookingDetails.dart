@@ -1,7 +1,10 @@
+import 'dart:math';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:online_lawyer_appointment_system/AllWigtes/Dialog.dart';
+import 'package:online_lawyer_appointment_system/users/controlNumber.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class BookingDetails extends StatefulWidget {
@@ -91,6 +94,18 @@ class _BookingDetailsState extends State<BookingDetails> {
                               .get(),
                           builder: (BuildContext context,
                               AsyncSnapshot<DocumentSnapshot> snapshot) {
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return Center(child: CircularProgressIndicator());
+                            }
+                            if (snapshot.hasError) {
+                              return Center(
+                                  child: Text('Error: ${snapshot.error}'));
+                            }
+                            if (!snapshot.hasData ||
+                                snapshot.data!.data() == null) {
+                              return Center(child: Text('No data available'));
+                            }
                             if (snapshot.connectionState ==
                                 ConnectionState.done) {
                               Map<String, dynamic> userDoc =
@@ -293,6 +308,29 @@ class _BookingDetailsState extends State<BookingDetails> {
                                               ],
                                             ),
                                             const SizedBox(height: 8),
+                                            data["isPayed"] == true &&
+                                                    UserID == data["clientId"]
+                                                ? Row(
+                                                    children: [
+                                                      const Icon(Icons.payment,
+                                                          size: 20,
+                                                          color: Colors.grey),
+                                                      const SizedBox(width: 8),
+                                                      Flexible(
+                                                        child: Text(
+                                                          "Control Number: ${data["controlNumber"]}",
+                                                          style:
+                                                              const TextStyle(
+                                                                  fontSize: 11),
+                                                          overflow: TextOverflow
+                                                              .ellipsis,
+                                                          maxLines: 1,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  )
+                                                : Container(),
+                                            const SizedBox(height: 8),
                                             Row(
                                               children: [
                                                 const Icon(Icons.notes,
@@ -359,6 +397,70 @@ class _BookingDetailsState extends State<BookingDetails> {
                                                 ],
                                               ),
                                             ],
+                                            if (data["status"] == "approved" &&
+                                                data["isPayed"] == false &&
+                                                UserID == data["clientId"]) ...[
+                                              Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.end,
+                                                children: [
+                                                  ElevatedButton(
+                                                    onPressed: () {
+                                                      makePayment(
+                                                        widget.docId,
+                                                      );
+                                                    },
+                                                    style: ElevatedButton
+                                                        .styleFrom(
+                                                      // primary: Colors.green,
+                                                      shape:
+                                                          RoundedRectangleBorder(
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(20),
+                                                      ),
+                                                    ),
+                                                    child: const Text('Pay'),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                            if (data["status"] == "approved" &&
+                                                data["isPayed"] == true &&
+                                                UserID == data["clientId"]) ...[
+                                              Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.end,
+                                                children: [
+                                                  ElevatedButton(
+                                                    onPressed: () {
+                                                      Navigator.push(
+                                                        context,
+                                                        MaterialPageRoute(
+                                                          builder: (context) =>
+                                                              ControlNumberDetails(
+                                                                  controlNumber:
+                                                                      data[
+                                                                          "controlNumber"]),
+                                                        ),
+                                                      );
+                                                    },
+                                                    style: ElevatedButton
+                                                        .styleFrom(
+                                                      // primary: Colors.green,
+                                                      shape:
+                                                          RoundedRectangleBorder(
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(20),
+                                                      ),
+                                                    ),
+                                                    child: const Text(
+                                                        'How to Pay'),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
                                           ],
                                         ),
                                       ),
@@ -386,5 +488,36 @@ class _BookingDetailsState extends State<BookingDetails> {
     });
 
     Navigator.pop(context);
+  }
+
+  Future makePayment(id) async {
+    final document = FirebaseFirestore.instance.collection('bookings').doc(id);
+    String controlNumber = generateRandomControlNumber();
+
+    await document.update({
+      "isPayed": true,
+      "controlNumber": controlNumber,
+    });
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            ControlNumberDetails(controlNumber: controlNumber),
+      ),
+    );
+  }
+
+  String generateRandomControlNumber() {
+    Random random = Random();
+    int controlNumberLength = 10; // Specify the length of the control number
+    String controlNumber = '';
+
+    for (int i = 0; i < controlNumberLength; i++) {
+      controlNumber +=
+          random.nextInt(10).toString(); // Generate a digit between 0 and 9
+    }
+
+    return controlNumber;
   }
 }
